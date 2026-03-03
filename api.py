@@ -175,6 +175,45 @@ def get_top_rated_movies() -> List[Dict]:
 
 
 @st.cache_data(ttl=CACHE_TTL)
+def get_genre_list() -> List[Dict]:
+    """Fetch list of available movie genres from TMDB.
+
+    Returns:
+        List of genre dictionaries with id and name
+    """
+    try:
+        params = {"api_key": API_KEY}
+        response = requests.get(f"{BASE_URL}/genre/movie/list", params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("genres", [])
+    except requests.RequestException as e:
+        st.warning(f"⚠️ Could not load genres: {str(e)}")
+        return []
+
+
+@st.cache_data(ttl=CACHE_TTL)
+def discover_movies_by_genre(genre_id: int) -> List[Dict]:
+    """Discover movies filtered by genre using TMDB discover endpoint.
+
+    Args:
+        genre_id: numeric genre identifier
+    
+    Returns:
+        List of movie dictionaries matching genre
+    """
+    try:
+        params = {"api_key": API_KEY, "with_genres": genre_id}
+        response = requests.get(f"{BASE_URL}/discover/movie", params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("results", [])
+    except requests.RequestException as e:
+        st.warning(f"⚠️ Could not discover movies: {str(e)}")
+        return []
+
+
+@st.cache_data(ttl=CACHE_TTL)
 def get_person_details(person_id: int) -> Optional[Dict]:
     """Fetch person (actor/director) details.
     

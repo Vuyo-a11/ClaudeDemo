@@ -4,24 +4,27 @@ A clean, professional Streamlit application for searching movies and viewing det
 
 ## Features
 
-- **Movie Search**: Search for movies by title with Year | Title display format
-- **Movie Selection**: Select from search results using a dropdown
-- **Detailed Information**: Display comprehensive movie data including:
-  - Poster image
-  - Release date, runtime, and status
-  - Rating and popularity metrics
-  - Overview/synopsis
-  - Genres
-  - Budget and revenue (financial data)
-  - Original language
-- **👥 Cast & Crew**: View top 10 actors/actresses with photos and character names
-- **🎬 Trailers & Videos**: Watch embedded trailers and video clips directly in the app
-- **📖 Reviews**: Read user reviews with ratings and timestamps
-- **🎯 Recommendations**: Discover similar movies based on your selection
-- **🔥 Trending & Top-Rated**: Browse trending movies this week and all-time top-rated films
-- **Error Handling**: Graceful error messages for API failures
-- **Caching**: Smart caching to reduce API calls
-- **Responsive UI**: Modern layout with columns and clear visual hierarchy
+- **Movie Search & Selection**: Search by title and choose from results presented as `Year | Title`.
+- **Detailed Movie Information**: View extensive details including:
+  - Poster, release date, runtime, status, and original language
+  - Rating, popularity, and vote count
+  - Overview/synopsis and genres
+  - Budget & revenue financial data
+- **👥 Cast & Crew**: Browse top cast/crew members with photos and roles.
+- **🎬 Trailers & Videos**: Watch embedded trailers, teasers, and clips.
+- **📖 Reviews**: Read user reviews along with rating and date.
+- **🎯 Recommendations**: See similar movies based on your current selection.
+- **📁 Favorites & 📋 Watchlist**: Save movies locally and view/manage them from the sidebar.
+- **👥 Movie Comparison**: Compare two or three titles side‑by‑side on key metrics.
+- **🌟 Actor/Director Filmography**: Search for talent and explore their credits.
+- **🎲 Surprise Me**: Get a random movie suggestion, optionally filtered by genre.
+- **🎨 Theme Toggle**: Switch between light and dark color modes.
+- **⭐ Personal Ratings**: Rate movies and track your rating history.
+- **📊 Statistics Dashboard**: View charts summarizing your favorites, watchlist, budgets, etc.
+- **PDF Export**: Download detailed movie info as a styled PDF.
+- **🔥 Trending & Top-Rated**: Browse TMDB’s trending and all-time best films.
+- **Error Handling & Caching**: Clear warnings for API issues and intelligent caching to minimize requests.
+- **Responsive UI**: Clean, modern layout optimized for ease of use.
 
 ## Project Structure
 
@@ -31,6 +34,8 @@ A clean, professional Streamlit application for searching movies and viewing det
 ├── config.py        # Configuration and constants
 ├── api.py           # TMDB API client with caching and error handling
 ├── utils.py         # UI rendering utilities
+├── storage.py       # Local persistence for favorites, watchlist, ratings
+├── pdfexport.py     # PDF generation logic
 ├── requirements.txt # Python dependencies
 └── README.md        # This file
 ```

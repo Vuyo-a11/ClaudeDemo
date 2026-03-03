@@ -5,14 +5,16 @@ from config import APP_TITLE
 from api import (
     validate_api_key, search_movies, get_movie_details, get_movie_credits,
     get_recommendations, get_videos, get_reviews, get_trending_movies, 
-    get_top_rated_movies, get_person_details, get_person_filmography
+    get_top_rated_movies, get_person_details, get_person_filmography,
+    get_genre_list, discover_movies_by_genre
 )
 from utils import (
     build_search_options, display_movie_details, display_cast_and_crew,
     display_trailers, display_reviews, display_recommendations,
     display_trending_or_top_section, display_favorites_section,
     display_watchlist_section, display_movie_action_buttons,
-    display_actor_filmography, display_movie_comparison
+    display_actor_filmography, display_movie_comparison,
+    display_surprise_movie
 )
 
 
@@ -90,7 +92,7 @@ def render_sidebar() -> None:
     
     view = st.sidebar.radio(
         "Choose View:",
-        ["🔍 Search", "❤️ Favorites", "📋 Watchlist", "👥 Compare Movies", "🌟 Actor", "📊 Statistics", "Settings"],
+        ["🔍 Search", "❤️ Favorites", "📋 Watchlist", "👥 Compare Movies", "🌟 Actor", "📊 Statistics", "🎲 Surprise Me", "Settings"],
         key="nav_radio"
     )
     
@@ -106,6 +108,8 @@ def render_sidebar() -> None:
         st.session_state.view_mode = "actor"
     elif view == "📊 Statistics":
         st.session_state.view_mode = "statistics"
+    elif view == "🎲 Surprise Me":
+        st.session_state.view_mode = "surprise"
     elif view == "Settings":
         st.session_state.view_mode = "settings"
     
@@ -281,6 +285,78 @@ def main() -> None:
             
             st.divider()
             display_movie_comparison(st.session_state.comparison_movies)
+    
+    elif st.session_state.view_mode == "actor":
+        st.title("🌟 Actor & Director Filmography")
+        st.markdown("Search for actors and discover their filmography")
+        
+        query = st.text_input("Search for actor/director name", placeholder="e.g., Tom Hanks")
+        
+        if query:
+            results = search_movies(query.split()[0])  # Use first word to search for movies with that actor
+            
+            # Extract unique cast members from results
+            all_cast = set()
+            for movie in results:
+                movie_details = get_movie_details(movie.get('id'))
+                if movie_details:
+                    credits = movie_details.get('credits', {})
+                    for cast_member in credits.get('cast', [])[:5]:
+                        all_cast.add((cast_member.get('name'), cast_member.get('id')))
+            
+            if all_cast:
+                actor_choice = st.selectbox(
+                    "Select an actor/director:",
+                    options=sorted(all_cast, key=lambda x: x[0]),
+                    format_func=lambda x: x[0]
+                )
+                
+                if actor_choice:
+                    actor_name, person_id = actor_choice
+                    display_actor_filmography(person_id, actor_name)
+            else:
+                st.info(f"No cast information found for '{query}'")
+    
+    elif st.session_state.view_mode == "statistics":
+        st.title("📊 Statistics Dashboard")
+        display_statistics()
+    
+    elif st.session_state.view_mode == "surprise":
+        st.title("🎲 Surprise Movie")
+        st.markdown("Feeling lucky? Get a random movie suggestion, optionally filtered by genre.")
+        display_surprise_movie()
+    
+    elif st.session_state.view_mode == "settings":
+        st.title("⚙️ Settings")
+        st.markdown("App settings and information")
+        
+        st.subheader("About")
+        st.info("""
+        **Movie Detail App**
+        
+        A comprehensive movie database application powered by **The Movie Database (TMDB) API**.
+        
+        Features:
+        - 🔍 Search for movies
+        - ❤️ Save favorite movies
+        - 📋 Create watchlists
+        - 👥 Compare movies side-by-side
+        - 🌟 Browse actor filmography
+        - 📄 Export movie details as PDF
+        """)
+        
+        st.subheader("Storage Info")
+        st.markdown("Your data is stored locally in: `~/.movie_app/`")
+        
+        if st.button("Clear All Local Data", type="secondary"):
+            from storage import STORAGE_DIR
+            import shutil
+            try:
+                shutil.rmtree(STORAGE_DIR)
+                st.success("All local data cleared!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Could not clear data: {str(e)}")
     
     elif st.session_state.view_mode == "actor":
         st.title("🌟 Actor & Director Filmography")

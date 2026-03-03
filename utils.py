@@ -9,7 +9,10 @@ from storage import (
     set_rating, get_rating, remove_rating, load_ratings
 )
 from pdfexport import create_movie_pdf
-from api import get_person_filmography
+from api import (
+    get_person_filmography, get_genre_list, discover_movies_by_genre,
+    get_trending_movies, get_movie_details
+)
 import pandas as pd
 
 
@@ -305,49 +308,32 @@ def display_movie_comparison(movies: List[Dict]) -> None:
         return
     
     st.subheader("⚖️ Movie Comparison")
-    
-    # Create columns for each movie
-    cols = st.columns(len(movies))
-    
-    for col_idx, (col, movie) in enumerate(zip(cols, movies)):
-        with col:
-            st.write(f"### {movie.get('title', 'Unknown')}")
-            
-            if movie.get('poster_path'):
-                st.image(f"{IMAGE_BASE_URL}{movie.get('poster_path')}")
-            
-            # Comparison data
-            st.write("**Release Date:** " + str(movie.get('release_date', 'N/A')))
-            st.write("**Rating:** " + f"{movie.get('vote_average', 'N/A')}/10")
-            st.write("**Runtime:** " + f"{movie.get('runtime', 'N/A')} min")
-            
-            # Genres
-            genres = movie.get('genres', [])
-            if genres:
-                genre_str = ", ".join([g['name'] for g in genres])
-                st.write("**Genres:** " + genre_str)
-            
-            # Budget & Revenue
-            if movie.get('budget') and movie.get('budget') > 0:
-                st.write("**Budget:** " + f"${movie.get('budget'):,.0f}")
-            
-            if movie.get('revenue') and movie.get('revenue') > 0:
-                st.write("**Revenue:** " + f"${movie.get('revenue'):,.0f}")
-            
-            st.write("**Popularity:** " + str(movie.get('popularity', 'N/A')))
-    
-    # Comparison table
-    st.subheader("📊 Detailed Comparison")
-    comparison_data = []
-    
-    comparison_data.append(['Metric'] + [m.get('title', 'Unknown')[:20] for m in movies])
-    comparison_data.append(['Release Date'] + [m.get('release_date', 'N/A') for m in movies])
-    comparison_data.append(['Rating'] + [f"{m.get('vote_average', 'N/A')}" for m in movies])
-    comparison_data.append(['Runtime (min)'] + [str(m.get('runtime', 'N/A')) for m in movies])
-    comparison_data.append(['Budget'] + [f"${m.get('budget', 0):,.0f}" if m.get('budget', 0) > 0 else 'N/A' for m in movies])
-    comparison_data.append(['Revenue'] + [f"${m.get('revenue', 0):,.0f}" if m.get('revenue', 0) > 0 else 'N/A' for m in movies])
-    comparison_data.append(['Popularity'] + [f"{m.get('popularity', 'N/A')}" for m in movies])
-    comparison_data.append(['Vote Count'] + [str(m.get('vote_count', 'N/A')) for m in movies])
+
+
+def display_surprise_movie() -> None:
+    """Show a random movie from trending or selected genre."""
+    st.subheader("🎲 Surprise Me!")
+    genres = get_genre_list()
+    genre_map = {g['name']: g['id'] for g in genres}
+    choice = st.selectbox("Optionally filter by genre:", ["(none)"] + list(genre_map.keys()))
+
+    if st.button("Get Random Movie"):
+        if choice and choice != "(none)":
+            candidates = discover_movies_by_genre(genre_map[choice])
+        else:
+            candidates = get_trending_movies()
+
+        if not candidates:
+            st.warning("No movies available for the chosen filter.")
+            return
+
+        import random
+        picked = random.choice(candidates)
+
+        # fetch full details in case discover/trending returned partial info
+        details = get_movie_details(picked.get('id')) or picked
+        display_movie_details(details)
+        display_movie_action_buttons(details)
     
     # Convert to markdown table format for display
     table_str = ""
