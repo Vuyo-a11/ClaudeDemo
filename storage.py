@@ -139,3 +139,45 @@ def is_in_watchlist(movie_id: int) -> bool:
     """
     watchlist = load_watchlist()
     return any(m.get('id') == movie_id for m in watchlist)
+
+
+# --- personal ratings storage ---
+RATINGS_FILE = STORAGE_DIR / "ratings.json"
+
+def load_ratings() -> Dict[int, float]:
+    """Load personal ratings from disk. Returns mapping movie_id->rating"""
+    ensure_storage_dir()
+    if RATINGS_FILE.exists():
+        try:
+            with open(RATINGS_FILE, 'r') as f:
+                return {int(k): float(v) for k,v in json.load(f).items()}
+        except (json.JSONDecodeError, IOError):
+            return {}
+    return {}
+
+
+def save_ratings(ratings: Dict[int, float]) -> None:
+    """Save ratings dictionary to disk"""
+    ensure_storage_dir()
+    with open(RATINGS_FILE, 'w') as f:
+        json.dump({str(k): v for k,v in ratings.items()}, f)
+
+
+def set_rating(movie_id: int, rating: float) -> None:
+    """Add or update personal rating for a movie"""
+    ratings = load_ratings()
+    ratings[movie_id] = rating
+    save_ratings(ratings)
+
+
+def get_rating(movie_id: int) -> Optional[float]:
+    """Retrieve personal rating for given movie"""
+    return load_ratings().get(movie_id)
+
+
+def remove_rating(movie_id: int) -> None:
+    """Delete personal rating for a movie"""
+    ratings = load_ratings()
+    if movie_id in ratings:
+        del ratings[movie_id]
+        save_ratings(ratings)

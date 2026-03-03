@@ -5,7 +5,8 @@ from typing import Dict, List
 from config import IMAGE_BASE_URL
 from storage import (
     is_favorited, is_in_watchlist, add_to_favorites, remove_from_favorites,
-    add_to_watchlist, remove_from_watchlist, load_favorites, load_watchlist
+    add_to_watchlist, remove_from_watchlist, load_favorites, load_watchlist,
+    set_rating, get_rating, remove_rating, load_ratings
 )
 from pdfexport import create_movie_pdf
 from api import get_person_filmography
@@ -358,7 +359,7 @@ def display_movie_comparison(movies: List[Dict]) -> None:
     st.markdown(table_str)
 
 def display_movie_action_buttons(movie: Dict) -> None:
-    """Display favorite and watchlist action buttons.
+    """Display favorite, watchlist, and rating buttons.
     
     Args:
         movie: Movie dictionary
@@ -366,8 +367,9 @@ def display_movie_action_buttons(movie: Dict) -> None:
     movie_id = movie.get('id')
     is_fav = is_favorited(movie_id)
     is_watch = is_in_watchlist(movie_id)
+    personal_rating = get_rating(movie_id)
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         if st.button("❤️ " + ("Remove from Favorites" if is_fav else "Add to Favorites"), key=f"fav_{movie_id}", use_container_width=True):
@@ -390,6 +392,18 @@ def display_movie_action_buttons(movie: Dict) -> None:
             st.rerun()
     
     with col3:
+        # personal rating slider
+        new_rating = st.slider("Your Rating", 0.0, 10.0, personal_rating or 0.0, 0.5, key=f"rate_{movie_id}")
+        if st.button("🔖 Save Rating", key=f"save_{movie_id}", use_container_width=True):
+            if new_rating > 0:
+                set_rating(movie_id, new_rating)
+                st.success(f"Rated {new_rating} / 10")
+            else:
+                remove_rating(movie_id)
+                st.info("Rating cleared")
+            st.rerun()
+    
+    with col4:
         pdf_bytes = create_movie_pdf(movie)
         st.download_button(
             label="📄 Download PDF",
