@@ -2,8 +2,16 @@
 
 import streamlit as st
 from config import APP_TITLE
-from api import validate_api_key, search_movies, get_movie_details
-from utils import build_search_options, display_movie_details
+from api import (
+    validate_api_key, search_movies, get_movie_details, get_movie_credits,
+    get_recommendations, get_videos, get_reviews, get_trending_movies, 
+    get_top_rated_movies
+)
+from utils import (
+    build_search_options, display_movie_details, display_cast_and_crew,
+    display_trailers, display_reviews, display_recommendations,
+    display_trending_or_top_section
+)
 
 
 def initialize_session_state() -> None:
@@ -12,6 +20,8 @@ def initialize_session_state() -> None:
         st.session_state.selected_movie_id = None
     if "search_results" not in st.session_state:
         st.session_state.search_results = {}
+    if "show_trending" not in st.session_state:
+        st.session_state.show_trending = True
 
 
 def handle_search(query: str) -> None:
@@ -29,6 +39,7 @@ def handle_search(query: str) -> None:
     
     if results:
         st.session_state.search_results = build_search_options(results)
+        st.session_state.show_trending = False
         st.success(f"✅ Found {len(results)} movies")
     else:
         st.warning("⚠️ No movies found. Try a different search term.")
@@ -64,7 +75,7 @@ def render_selection_section() -> None:
 
 
 def render_details_section() -> None:
-    """Render the movie details display."""
+    """Render the movie details display with all content & discovery features."""
     if not st.session_state.selected_movie_id:
         return
     
@@ -72,7 +83,54 @@ def render_details_section() -> None:
     
     if movie_details:
         st.divider()
+        
+        # Main movie details
         display_movie_details(movie_details)
+        
+        st.divider()
+        
+        # Cast and crew
+        credits = get_movie_credits(st.session_state.selected_movie_id)
+        display_cast_and_crew(credits)
+        
+        st.divider()
+        
+        # Videos/Trailers
+        videos = get_videos(st.session_state.selected_movie_id)
+        display_trailers(videos)
+        
+        st.divider()
+        
+        # Reviews
+        reviews = get_reviews(st.session_state.selected_movie_id)
+        display_reviews(reviews)
+        
+        st.divider()
+        
+        # Recommendations
+        recommendations = get_recommendations(st.session_state.selected_movie_id)
+        display_recommendations(recommendations)
+
+
+def render_discovery_section() -> None:
+    """Render trending and top-rated sections."""
+    if not st.session_state.show_trending:
+        return
+    
+    st.divider()
+    st.subheader("🔥 Discover Movies")
+    
+    tab1, tab2 = st.tabs(["📈 Trending This Week", "🏆 Top Rated"])
+    
+    with tab1:
+        with st.spinner("Loading trending movies..."):
+            trending = get_trending_movies()
+        display_trending_or_top_section("Trending This Week", trending)
+    
+    with tab2:
+        with st.spinner("Loading top-rated movies..."):
+            top_rated = get_top_rated_movies()
+        display_trending_or_top_section("Top Rated Movies", top_rated)
 
 
 def main() -> None:
@@ -99,6 +157,7 @@ def main() -> None:
     render_search_section()
     render_selection_section()
     render_details_section()
+    render_discovery_section()
 
 
 if __name__ == "__main__":

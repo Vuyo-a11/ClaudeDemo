@@ -14,6 +14,11 @@ A clean, professional Streamlit application for searching movies and viewing det
   - Genres
   - Budget and revenue (financial data)
   - Original language
+- **👥 Cast & Crew**: View top 10 actors/actresses with photos and character names
+- **🎬 Trailers & Videos**: Watch embedded trailers and video clips directly in the app
+- **📖 Reviews**: Read user reviews with ratings and timestamps
+- **🎯 Recommendations**: Discover similar movies based on your selection
+- **🔥 Trending & Top-Rated**: Browse trending movies this week and all-time top-rated films
 - **Error Handling**: Graceful error messages for API failures
 - **Caching**: Smart caching to reduce API calls
 - **Responsive UI**: Modern layout with columns and clear visual hierarchy

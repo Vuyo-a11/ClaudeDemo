@@ -79,3 +79,103 @@ def display_movie_details(movie: Dict) -> None:
             st.write("**Budget:**", f"${budget:,.0f}" if budget > 0 else "N/A")
         if revenue:
             st.write("**Revenue:**", f"${revenue:,.0f}" if revenue > 0 else "N/A")
+
+
+def display_cast_and_crew(credits: Dict) -> None:
+    """Display cast and crew members.
+    
+    Args:
+        credits: Credits dictionary from API
+    """
+    st.subheader("👥 Cast & Crew")
+    
+    cast = credits.get("cast", [])[:10]  # Show top 10 cast members
+    
+    if cast:
+        cols = st.columns(min(5, len(cast)))
+        for idx, actor in enumerate(cast):
+            with cols[idx % len(cols)]:
+                st.write(f"**{actor.get('name', 'Unknown')}**")
+                if actor.get("profile_path"):
+                    st.image(f"{IMAGE_BASE_URL}{actor.get('profile_path')}")
+                st.caption(actor.get("character", "Unknown role"))
+    else:
+        st.info("No cast information available")
+
+
+def display_trailers(videos: List[Dict]) -> None:
+    """Display trailers and videos.
+    
+    Args:
+        videos: List of video dictionaries from API
+    """
+    trailers = [v for v in videos if v.get("type") in ["Trailer", "Teaser", "Clip"]]
+    
+    if not trailers:
+        return
+    
+    st.subheader("🎬 Trailers & Videos")
+    
+    for video in trailers[:3]:  # Show up to 3 videos
+        if video.get("site") == "YouTube":
+            video_key = video.get("key")
+            st.video(f"https://www.youtube.com/watch?v={video_key}")
+            st.caption(f"{video.get('type')}: {video.get('name', 'Video')}")
+
+
+def display_reviews(reviews: List[Dict]) -> None:
+    """Display movie reviews.
+    
+    Args:
+        reviews: List of review dictionaries from API
+    """
+    if not reviews:
+        return
+    
+    st.subheader("📖 Reviews")
+    
+    for review in reviews[:5]:  # Show up to 5 reviews
+        with st.expander(f"⭐ Review by {review.get('author', 'Anonymous')} ({review.get('author_details', {}).get('rating', 'N/A')}/10)"):
+            st.write(review.get("content", "No content available"))
+            st.caption(f"*{review.get('created_at', 'N/A')[:10]}*")
+
+
+def display_recommendations(recommendations: List[Dict]) -> None:
+    """Display recommended movies.
+    
+    Args:
+        recommendations: List of movie dictionaries from API
+    """
+    if not recommendations:
+        return
+    
+    st.subheader("🎯 Recommended Movies")
+    
+    cols = st.columns(5)
+    for idx, movie in enumerate(recommendations[:10]):
+        with cols[idx % 5]:
+            st.write(f"**{movie.get('title', 'Unknown')[:15]}...**")
+            if movie.get("poster_path"):
+                st.image(f"{IMAGE_BASE_URL}{movie.get('poster_path')}")
+            st.caption(f"⭐ {movie.get('vote_average', 'N/A')}")
+
+
+def display_trending_or_top_section(title: str, movies: List[Dict]) -> None:
+    """Display trending or top-rated movies.
+    
+    Args:
+        title: Section title
+        movies: List of movie dictionaries
+    """
+    if not movies:
+        return
+    
+    st.subheader(title)
+    
+    cols = st.columns(5)
+    for idx, movie in enumerate(movies[:10]):
+        with cols[idx % 5]:
+            st.write(f"**{movie.get('title', 'Unknown')[:15]}...**")
+            if movie.get("poster_path"):
+                st.image(f"{IMAGE_BASE_URL}{movie.get('poster_path')}")
+            st.caption(f"⭐ {movie.get('vote_average', 'N/A')}")
