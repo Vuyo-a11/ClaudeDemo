@@ -41,8 +41,5 @@ if st.button("Search") and query:
             st.write("**Original Language:**", detail.get("original_language"))
             st.write("**Budget:**", detail.get("budget"))
             st.write("**Revenue:**", detail.get("revenue"))
-            # show raw JSON for everything else
-            st.subheader("Raw API Response")
-            st.json(detail)
     else:
         st.warning("No results found")
