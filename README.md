@@ -5,6 +5,7 @@ A clean, professional Streamlit application for searching movies and viewing det
 ## Features
 
 - **Movie Search & Selection**: Search by title and choose from results presented as `Year | Title`.
+  - 🎯 **Advanced Filters**: Narrow results by release year, minimum rating, original language, and genre.
 - **Detailed Movie Information**: View extensive details including:
   - Poster, release date, runtime, status, and original language
   - Rating, popularity, and vote count
@@ -24,6 +25,7 @@ A clean, professional Streamlit application for searching movies and viewing det
 - **PDF Export**: Download detailed movie info as a styled PDF.
 - **🔥 Trending & Top-Rated**: Browse TMDB’s trending and all-time best films.
 - **Error Handling & Caching**: Clear warnings for API issues and intelligent caching to minimize requests.
+- **Advanced Search**: Use additional parameters to refine movie queries or search without a title using filters only.
 - **Responsive UI**: Clean, modern layout optimized for ease of use.
 
 ## Project Structure

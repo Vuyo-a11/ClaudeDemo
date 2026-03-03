@@ -334,15 +334,6 @@ def display_surprise_movie() -> None:
         details = get_movie_details(picked.get('id')) or picked
         display_movie_details(details)
         display_movie_action_buttons(details)
-    
-    # Convert to markdown table format for display
-    table_str = ""
-    for row in comparison_data:
-        table_str += "| " + " | ".join(str(c) for c in row) + " |\n"
-        if row == comparison_data[0]:
-            table_str += "|" + " --- |" * len(row) + "\n"
-    
-    st.markdown(table_str)
 
 def display_movie_action_buttons(movie: Dict) -> None:
     """Display favorite, watchlist, and rating buttons.

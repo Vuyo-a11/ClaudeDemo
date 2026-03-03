@@ -2,7 +2,7 @@
 
 import requests
 import streamlit as st
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from config import API_KEY, BASE_URL, CACHE_TTL
 
 
@@ -190,6 +190,92 @@ def get_genre_list() -> List[Dict]:
     except requests.RequestException as e:
         st.warning(f"⚠️ Could not load genres: {str(e)}")
         return []
+
+
+@st.cache_data(ttl=CACHE_TTL)
+def get_language_list() -> List[Dict]:
+    """Fetch supported language codes from TMDB.
+
+    Returns:
+        List of language dictionaries containing iso_639_1 and english_name.
+    """
+    try:
+        params = {"api_key": API_KEY}
+        response = requests.get(f"{BASE_URL}/configuration/languages", params=params, timeout=10)
+        response.raise_for_status()
+        return response.json()  # this endpoint returns a list
+    except requests.RequestException as e:
+        st.warning(f"⚠️ Could not load language list: {str(e)}")
+        return []
+
+
+@st.cache_data(ttl=CACHE_TTL)
+def search_movies_advanced(
+    query: str = "",
+    year: Optional[int] = None,
+    language: Optional[str] = None,
+    genre_id: Optional[int] = None,
+    min_rating: Optional[float] = None,
+) -> List[Dict]:
+    """Perform a movie search with additional filters.
+
+    Args:
+        query: Search text (optional). If left empty, the discover endpoint is used.
+        year: Primary release year to filter by.
+        language: Original language code (iso_639_1).
+        genre_id: TMDB genre id.
+        min_rating: Minimum vote average to include.
+
+    Returns:
+        Filtered list of movie dictionaries.
+    """
+    results: List[Dict] = []
+
+    # If the user provided a query, start with standard search
+    if query:
+        results = search_movies(query)
+    else:
+        # Use discover endpoint to honor filters even without query
+        try:
+            params: Dict[str, Any] = {"api_key": API_KEY}
+            if year:
+                params["primary_release_year"] = year
+            if language:
+                params["with_original_language"] = language
+            if genre_id:
+                params["with_genres"] = genre_id
+            if min_rating is not None:
+                params["vote_average.gte"] = min_rating
+
+            response = requests.get(f"{BASE_URL}/discover/movie", params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            results = data.get("results", [])
+        except requests.RequestException as e:
+            st.warning(f"⚠️ Advanced discover failed: {str(e)}")
+            results = []
+
+    # apply filters on search results as well
+    if query and any([year, language, genre_id, min_rating is not None]):
+        filtered = []
+        for m in results:
+            if year:
+                rd = m.get("release_date", "")
+                if not rd.startswith(str(year)):
+                    continue
+            if language and m.get("original_language") != language:
+                continue
+            if genre_id:
+                # search results include ``genre_ids`` list
+                if genre_id not in m.get("genre_ids", []):
+                    continue
+            if min_rating is not None:
+                if m.get("vote_average", 0) < min_rating:
+                    continue
+            filtered.append(m)
+        results = filtered
+
+    return results
 
 
 @st.cache_data(ttl=CACHE_TTL)

@@ -3,10 +3,11 @@
 import streamlit as st
 from config import APP_TITLE
 from api import (
-    validate_api_key, search_movies, get_movie_details, get_movie_credits,
-    get_recommendations, get_videos, get_reviews, get_trending_movies, 
-    get_top_rated_movies, get_person_details, get_person_filmography,
-    get_genre_list, discover_movies_by_genre
+    validate_api_key, search_movies, search_movies_advanced, get_movie_details,
+    get_movie_credits, get_recommendations, get_videos, get_reviews,
+    get_trending_movies, get_top_rated_movies, get_person_details,
+    get_person_filmography, get_genre_list, get_language_list,
+    discover_movies_by_genre
 )
 from utils import (
     build_search_options, display_movie_details, display_cast_and_crew,
@@ -36,38 +37,72 @@ def initialize_session_state() -> None:
         st.session_state.theme = "Light"  # Light or Dark
 
 
-def handle_search(query: str) -> None:
-    """Handle movie search and update session state.
-    
-    Args:
-        query: Search query string
+def handle_search(
+    query: str,
+    year: int | None = None,
+    min_rating: float | None = None,
+    language: str | None = None,
+    genre_id: int | None = None,
+) -> None:
+    """Perform search with optional advanced filters and update state.
+
+    If the query is empty but filters are provided, discover results are used.
     """
-    if not query.strip():
-        st.warning("⚠️ Please enter a search query")
+    if not query.strip() and not any([year, min_rating, language, genre_id]):
+        st.warning("⚠️ Please enter a search query or select a filter")
         return
-    
+
     with st.spinner("🔍 Searching movies..."):
-        results = search_movies(query)
-    
+        results = search_movies_advanced(
+            query=query,
+            year=year,
+            language=language,
+            genre_id=genre_id,
+            min_rating=min_rating,
+        )
+
     if results:
         st.session_state.search_results = build_search_options(results)
         st.session_state.show_trending = False
         st.success(f"✅ Found {len(results)} movies")
     else:
-        st.warning("⚠️ No movies found. Try a different search term.")
+        st.warning("⚠️ No movies matched your criteria.")
         st.session_state.search_results = {}
 
 
 def render_search_section() -> None:
-    """Render the search input section."""
+    """Render the search input section with advanced filters."""
     st.subheader("🎬 Search for a Movie")
     
     col1, col2 = st.columns([3, 1])
     with col1:
         query = st.text_input("Movie title", key="search_input", placeholder="e.g., The Matrix")
+        with st.expander("Advanced Filters"):
+            # use 0 as a sentinel for "no year"
+            year = st.number_input(
+                "Year (leave 0 for any)",
+                min_value=0,
+                max_value=2100,
+                step=1,
+                value=0,
+            )
+            min_rating = st.slider("Minimum Rating", min_value=0.0, max_value=10.0, value=0.0)
+
+            genres = get_genre_list()
+            genre_map = {g['name']: g['id'] for g in genres}
+            genre_choice = st.selectbox("Genre", ["(any)"] + list(genre_map.keys()))
+
+            languages = get_language_list()
+            lang_map = {f"{l['english_name']} ({l['iso_639_1']})": l['iso_639_1'] for l in languages}
+            language_choice = st.selectbox("Original Language", ["(any)"] + list(lang_map.keys()))
     with col2:
         if st.button("Search", use_container_width=True):
-            handle_search(query)
+            # convert inputs
+            y = year if year != 0 else None
+            mr = min_rating if min_rating > 0 else None
+            gid = genre_map.get(genre_choice) if genre_choice and genre_choice != "(any)" else None
+            lang = lang_map.get(language_choice) if language_choice and language_choice != "(any)" else None
+            handle_search(query, year=y, min_rating=mr, language=lang, genre_id=gid)
 
 
 def render_selection_section() -> None:
