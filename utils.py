@@ -197,6 +197,9 @@ def display_favorites_section() -> None:
         return
     
     st.write(f"You have **{len(favorites_ids)}** favorite movies")
+
+
+def display_watchlist_section() -> None:
     """Display user's watchlist."""
     st.subheader("📋 My Watchlist")
     
