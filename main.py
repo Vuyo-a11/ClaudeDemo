@@ -1,59 +1,106 @@
+"""Movie Detail App - Search and display detailed information about movies using TMDB API."""
+
 import streamlit as st
-import requests
-import os
+from config import APP_TITLE
+from api import validate_api_key, search_movies, get_movie_details
+from utils import build_search_options, display_movie_details
 
-API_KEY = os.environ.get("TMDB_API_KEY")
-if not API_KEY:
-    st.error("TMDB_API_KEY environment variable not set. Please export your API key before running.")
-    st.stop()
 
-BASE_URL = "https://api.themoviedb.org/3"
-IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
-
-# Initialize session state
-if "selected_movie_id" not in st.session_state:
-    st.session_state.selected_movie_id = None
-if "search_results" not in st.session_state:
-    st.session_state.search_results = {}
-
-st.title("Movie Detail App - TMDB")
-
-# search section
-query = st.text_input("Search for a movie")
-if st.button("Search") and query:
-    params = {"api_key": API_KEY, "query": query}
-    res = requests.get(f"{BASE_URL}/search/movie", params=params)
-    data = res.json()
-    results = data.get("results", [])
-    if results:
-        # Store results in session state
-        st.session_state.search_results = {f"{r.get('release_date','')[:4]} | {r.get('title')}": r.get('id') for r in results}
-        st.success(f"Found {len(results)} movies")
-    else:
-        st.warning("No results found")
+def initialize_session_state() -> None:
+    """Initialize Streamlit session state variables."""
+    if "selected_movie_id" not in st.session_state:
+        st.session_state.selected_movie_id = None
+    if "search_results" not in st.session_state:
         st.session_state.search_results = {}
 
-# Show dropdown if search results exist
-if st.session_state.search_results:
-    choice = st.selectbox("Select a movie", [""] + list(st.session_state.search_results.keys()))
+
+def handle_search(query: str) -> None:
+    """Handle movie search and update session state.
+    
+    Args:
+        query: Search query string
+    """
+    if not query.strip():
+        st.warning("⚠️ Please enter a search query")
+        return
+    
+    with st.spinner("🔍 Searching movies..."):
+        results = search_movies(query)
+    
+    if results:
+        st.session_state.search_results = build_search_options(results)
+        st.success(f"✅ Found {len(results)} movies")
+    else:
+        st.warning("⚠️ No movies found. Try a different search term.")
+        st.session_state.search_results = {}
+
+
+def render_search_section() -> None:
+    """Render the search input section."""
+    st.subheader("🎬 Search for a Movie")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        query = st.text_input("Movie title", key="search_input", placeholder="e.g., The Matrix")
+    with col2:
+        if st.button("Search", use_container_width=True):
+            handle_search(query)
+
+
+def render_selection_section() -> None:
+    """Render the movie selection dropdown."""
+    if not st.session_state.search_results:
+        return
+    
+    st.subheader("🎥 Select a Movie")
+    choice = st.selectbox(
+        "Choose from results:",
+        options=[""] + list(st.session_state.search_results.keys()),
+        format_func=lambda x: x if x else "-- Select a movie --"
+    )
+    
     if choice and choice != "":
         st.session_state.selected_movie_id = st.session_state.search_results[choice]
+
+
+def render_details_section() -> None:
+    """Render the movie details display."""
+    if not st.session_state.selected_movie_id:
+        return
     
-# Display movie details if a movie is selected
-if st.session_state.selected_movie_id:
-    detail_res = requests.get(f"{BASE_URL}/movie/{st.session_state.selected_movie_id}", params={"api_key": API_KEY})
-    detail = detail_res.json()
-    # display details
-    st.header(detail.get("title"))
-    if detail.get("poster_path"):
-        st.image(f"{IMAGE_BASE}{detail.get('poster_path')}")
-    st.write("**Release Date:**", detail.get("release_date"))
-    st.write("**Overview:**", detail.get("overview"))
-    st.write("**Genres:**", ", ".join([g['name'] for g in detail.get('genres', [])]))
-    st.write("**Runtime:**", detail.get("runtime"), "minutes")
-    st.write("**Rating:**", detail.get("vote_average"), "/ 10")
-    st.write("**Popularity:**", detail.get("popularity"))
-    st.write("**Status:**", detail.get("status"))
-    st.write("**Original Language:**", detail.get("original_language"))
-    st.write("**Budget:**", detail.get("budget"))
-    st.write("**Revenue:**", detail.get("revenue"))
+    movie_details = get_movie_details(st.session_state.selected_movie_id)
+    
+    if movie_details:
+        st.divider()
+        display_movie_details(movie_details)
+
+
+def main() -> None:
+    """Main application entry point."""
+    # Page configuration
+    st.set_page_config(
+        page_title=APP_TITLE,
+        page_icon="🎬",
+        layout="wide",
+        initial_sidebar_state="collapsed"
+    )
+    
+    # Validate API key
+    if not validate_api_key():
+        st.stop()
+    
+    # Initialize session state
+    initialize_session_state()
+    
+    # Render app
+    st.title(APP_TITLE)
+    st.markdown("Search for movies and discover detailed information from **The Movie Database (TMDB)**")
+    
+    render_search_section()
+    render_selection_section()
+    render_details_section()
+
+
+if __name__ == "__main__":
+    main()
+

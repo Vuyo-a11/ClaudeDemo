@@ -1,36 +1,98 @@
 # Movie Detail Streamlit App
 
-This is a simple Streamlit application that allows users to search for movies and view detailed information using The Movie Database (TMDB) API.
+A clean, professional Streamlit application for searching movies and viewing detailed information using **The Movie Database (TMDB) API**.
 
 ## Features
 
-1. **Search Movies**: Users can enter a query to search for movies. Results show as `Year | Title`.
-2. **Select a Movie**: After searching, users can select a movie from a dropdown.
-3. **View Details**: Displays title, poster, release date, overview, genres, runtime, rating, popularity, status, language, budget, revenue, and raw JSON response.
+- **Movie Search**: Search for movies by title with Year | Title display format
+- **Movie Selection**: Select from search results using a dropdown
+- **Detailed Information**: Display comprehensive movie data including:
+  - Poster image
+  - Release date, runtime, and status
+  - Rating and popularity metrics
+  - Overview/synopsis
+  - Genres
+  - Budget and revenue (financial data)
+  - Original language
+- **Error Handling**: Graceful error messages for API failures
+- **Caching**: Smart caching to reduce API calls
+- **Responsive UI**: Modern layout with columns and clear visual hierarchy
 
-## Implementation Plan
+## Project Structure
 
-- **Initial Setup**: Create Streamlit project with requirements
-- **Search Page**: Implement search input and API call to `/search/movie`.
-- **Selection & Details**: Show dropdown of search results. Fetch details from `/movie/{id}`.
-- **Display Info**: Render all valuable fields from API response, including raw JSON.
-- **Polish & Commit**: Add comments, README, and commit history traces.
+```
+.
+├── main.py          # Main app entry point with UI logic
+├── config.py        # Configuration and constants
+├── api.py           # TMDB API client with caching and error handling
+├── utils.py         # UI rendering utilities
+├── requirements.txt # Python dependencies
+└── README.md        # This file
+```
 
-## Run the App
+## Best Practices Implemented
 
-1. Create a Python environment (venv or conda).
+✅ **Modular Architecture**: Separated concerns (API, Config, Utils, UI)  
+✅ **Type Hints**: Full type annotations for better code quality  
+✅ **Docstrings**: Clear documentation for all functions  
+✅ **Error Handling**: Try-except blocks with user-friendly messages  
+✅ **Caching**: Streamlit `@st.cache_data` for API efficiency  
+✅ **Constants**: Centralized configuration in `config.py`  
+✅ **Session State**: Proper state management across reruns  
+✅ **Input Validation**: Validation of search queries and responses  
+
+## Installation
+
+1. Create a Python environment (venv or conda):
+   ```bash
+   python -m venv .venv
+   .\.venv\Scripts\activate  # Windows
+   # or
+   source .venv/bin/activate  # macOS/Linux
+   ```
+
 2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-3. Launch Streamlit:
+
+3. Set your TMDB API key:
+   ```powershell
+   # Windows PowerShell
+   $env:TMDB_API_KEY="your_key_here"
+   
+   # Windows CMD
+   set TMDB_API_KEY=your_key_here
+   
+   # macOS/Linux
+   export TMDB_API_KEY="your_key_here"
+   ```
+
+4. Run the app:
    ```bash
    streamlit run main.py
    ```
 
+The app will open in your browser at `http://localhost:8501`
+
+## Configuration
+
+- **TMDB_API_KEY**: Required environment variable containing your TMDB API key
+- **CACHE_TTL**: Cache duration in seconds (default: 3600 = 1 hour)
+- Modify `config.py` to change constants or timeouts
+
 ## Notes
 
-- TMDB API key should be provided via the `TMDB_API_KEY` environment variable. Set it before launching the app, e.g. `set TMDB_API_KEY=YOUR_KEY` on Windows or `export TMDB_API_KEY=YOUR_KEY` on macOS/Linux.
-- Commits should trace feature development and incremental progress.
+- API key is never hardcoded—always use environment variables
+- Results are cached to minimize API calls and improve performance
+- The app requires internet connection for TMDB API access
 
-Enjoy exploring movies! 🐼
+## Development Notes
+
+For development and testing, commits trace feature progress:
+- Initial setup & project structure
+- Environment variable security
+- Refactoring for best practices (modular, type hints, caching, error handling)
+- Enhanced UI with better formatting
+
+Enjoy exploring movies with this professional Streamlit app! 🎬
