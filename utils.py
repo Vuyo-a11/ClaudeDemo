@@ -7,6 +7,8 @@ from storage import (
     is_favorited, is_in_watchlist, add_to_favorites, remove_from_favorites,
     add_to_watchlist, remove_from_watchlist, load_favorites, load_watchlist
 )
+from pdfexport import create_movie_pdf
+from api import get_person_filmography
 
 
 def format_search_option(movie: Dict) -> str:
@@ -195,9 +197,6 @@ def display_favorites_section() -> None:
         return
     
     st.write(f"You have **{len(favorites_ids)}** favorite movies")
-
-
-def display_watchlist_section() -> None:
     """Display user's watchlist."""
     st.subheader("📋 My Watchlist")
     
@@ -216,6 +215,99 @@ def display_watchlist_section() -> None:
                 st.image(f"{IMAGE_BASE_URL}{movie.get('poster_path')}")
             st.caption(f"⭐ {movie.get('vote_average', 'N/A')}")
 
+def display_actor_filmography(person_id: int, actor_name: str) -> None:
+    """Display filmography for an actor/director.
+    
+    Args:
+        person_id: TMDB person ID
+        actor_name: Name of the actor/director
+    """
+    st.subheader(f"🎬 Filmography of {actor_name}")
+    
+    filmography = get_person_filmography(person_id)
+    
+    if not filmography:
+        st.info(f"No filmography information available for {actor_name}")
+        return
+    
+    # Filter out movies without titles or release dates
+    valid_films = [f for f in filmography if f.get('title') and f.get('release_date')]
+    
+    st.write(f"**{actor_name}** has appeared in **{len(valid_films)}** movies")
+    
+    # Display in a scrollable grid
+    cols = st.columns(5)
+    for idx, film in enumerate(valid_films[:20]):  # Show top 20 films
+        with cols[idx % 5]:
+            st.write(f"**{film.get('title', 'Unknown')[:12]}...**")
+            if film.get("poster_path"):
+                st.image(f"{IMAGE_BASE_URL}{film.get('poster_path')}")
+            st.caption(f"{film.get('release_date', 'N/A')[:4]}")
+
+
+def display_movie_comparison(movies: List[Dict]) -> None:
+    """Display side-by-side comparison of movies.
+    
+    Args:
+        movies: List of movie dictionaries (2-3 movies)
+    """
+    if len(movies) < 2:
+        st.warning("Select at least 2 movies to compare")
+        return
+    
+    st.subheader("⚖️ Movie Comparison")
+    
+    # Create columns for each movie
+    cols = st.columns(len(movies))
+    
+    for col_idx, (col, movie) in enumerate(zip(cols, movies)):
+        with col:
+            st.write(f"### {movie.get('title', 'Unknown')}")
+            
+            if movie.get('poster_path'):
+                st.image(f"{IMAGE_BASE_URL}{movie.get('poster_path')}")
+            
+            # Comparison data
+            st.write("**Release Date:** " + str(movie.get('release_date', 'N/A')))
+            st.write("**Rating:** " + f"{movie.get('vote_average', 'N/A')}/10")
+            st.write("**Runtime:** " + f"{movie.get('runtime', 'N/A')} min")
+            
+            # Genres
+            genres = movie.get('genres', [])
+            if genres:
+                genre_str = ", ".join([g['name'] for g in genres])
+                st.write("**Genres:** " + genre_str)
+            
+            # Budget & Revenue
+            if movie.get('budget') and movie.get('budget') > 0:
+                st.write("**Budget:** " + f"${movie.get('budget'):,.0f}")
+            
+            if movie.get('revenue') and movie.get('revenue') > 0:
+                st.write("**Revenue:** " + f"${movie.get('revenue'):,.0f}")
+            
+            st.write("**Popularity:** " + str(movie.get('popularity', 'N/A')))
+    
+    # Comparison table
+    st.subheader("📊 Detailed Comparison")
+    comparison_data = []
+    
+    comparison_data.append(['Metric'] + [m.get('title', 'Unknown')[:20] for m in movies])
+    comparison_data.append(['Release Date'] + [m.get('release_date', 'N/A') for m in movies])
+    comparison_data.append(['Rating'] + [f"{m.get('vote_average', 'N/A')}" for m in movies])
+    comparison_data.append(['Runtime (min)'] + [str(m.get('runtime', 'N/A')) for m in movies])
+    comparison_data.append(['Budget'] + [f"${m.get('budget', 0):,.0f}" if m.get('budget', 0) > 0 else 'N/A' for m in movies])
+    comparison_data.append(['Revenue'] + [f"${m.get('revenue', 0):,.0f}" if m.get('revenue', 0) > 0 else 'N/A' for m in movies])
+    comparison_data.append(['Popularity'] + [f"{m.get('popularity', 'N/A')}" for m in movies])
+    comparison_data.append(['Vote Count'] + [str(m.get('vote_count', 'N/A')) for m in movies])
+    
+    # Convert to markdown table format for display
+    table_str = ""
+    for row in comparison_data:
+        table_str += "| " + " | ".join(str(c) for c in row) + " |\n"
+        if row == comparison_data[0]:
+            table_str += "|" + " --- |" * len(row) + "\n"
+    
+    st.markdown(table_str)
 
 def display_movie_action_buttons(movie: Dict) -> None:
     """Display favorite and watchlist action buttons.
@@ -227,7 +319,7 @@ def display_movie_action_buttons(movie: Dict) -> None:
     is_fav = is_favorited(movie_id)
     is_watch = is_in_watchlist(movie_id)
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         if st.button("❤️ " + ("Remove from Favorites" if is_fav else "Add to Favorites"), key=f"fav_{movie_id}", use_container_width=True):
@@ -248,4 +340,14 @@ def display_movie_action_buttons(movie: Dict) -> None:
                 add_to_watchlist(movie)
                 st.success("Added to watchlist!")
             st.rerun()
+    
+    with col3:
+        pdf_bytes = create_movie_pdf(movie)
+        st.download_button(
+            label="📄 Download PDF",
+            data=pdf_bytes,
+            file_name=f"{movie.get('title', 'movie').replace(' ', '_')}.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
 

@@ -172,3 +172,46 @@ def get_top_rated_movies() -> List[Dict]:
     except requests.RequestException as e:
         st.warning(f"⚠️ Could not load top-rated movies: {str(e)}")
         return []
+
+
+@st.cache_data(ttl=CACHE_TTL)
+def get_person_details(person_id: int) -> Optional[Dict]:
+    """Fetch person (actor/director) details.
+    
+    Args:
+        person_id: TMDB person ID
+        
+    Returns:
+        Person details dictionary
+    """
+    try:
+        params = {"api_key": API_KEY}
+        response = requests.get(f"{BASE_URL}/person/{person_id}", params=params, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        st.warning(f"⚠️ Could not load person details: {str(e)}")
+        return None
+
+
+@st.cache_data(ttl=CACHE_TTL)
+def get_person_filmography(person_id: int) -> List[Dict]:
+    """Fetch filmography for a person (actor/director).
+    
+    Args:
+        person_id: TMDB person ID
+        
+    Returns:
+        List of movie dictionaries
+    """
+    try:
+        params = {"api_key": API_KEY}
+        response = requests.get(f"{BASE_URL}/person/{person_id}/movie_credits", params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        # Return cast movies, sorted by release date
+        cast = data.get("cast", [])
+        return sorted(cast, key=lambda x: x.get("release_date", ""), reverse=True)
+    except requests.RequestException as e:
+        st.warning(f"⚠️ Could not load filmography: {str(e)}")
+        return []
