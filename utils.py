@@ -3,6 +3,10 @@
 import streamlit as st
 from typing import Dict, List
 from config import IMAGE_BASE_URL
+from storage import (
+    is_favorited, is_in_watchlist, add_to_favorites, remove_from_favorites,
+    add_to_watchlist, remove_from_watchlist, load_favorites, load_watchlist
+)
 
 
 def format_search_option(movie: Dict) -> str:
@@ -179,3 +183,69 @@ def display_trending_or_top_section(title: str, movies: List[Dict]) -> None:
             if movie.get("poster_path"):
                 st.image(f"{IMAGE_BASE_URL}{movie.get('poster_path')}")
             st.caption(f"⭐ {movie.get('vote_average', 'N/A')}")
+
+
+def display_favorites_section() -> None:
+    """Display user's favorite movies."""
+    st.subheader("❤️ My Favorites")
+    
+    favorites_ids = load_favorites()
+    if not favorites_ids:
+        st.info("No favorite movies yet. Add some to get started!")
+        return
+    
+    st.write(f"You have **{len(favorites_ids)}** favorite movies")
+
+
+def display_watchlist_section() -> None:
+    """Display user's watchlist."""
+    st.subheader("📋 My Watchlist")
+    
+    watchlist = load_watchlist()
+    if not watchlist:
+        st.info("Your watchlist is empty. Add movies to watch later!")
+        return
+    
+    st.write(f"You have **{len(watchlist)}** movies in your watchlist")
+    
+    cols = st.columns(5)
+    for idx, movie in enumerate(watchlist):
+        with cols[idx % 5]:
+            st.write(f"**{movie.get('title', 'Unknown')[:15]}...**")
+            if movie.get("poster_path"):
+                st.image(f"{IMAGE_BASE_URL}{movie.get('poster_path')}")
+            st.caption(f"⭐ {movie.get('vote_average', 'N/A')}")
+
+
+def display_movie_action_buttons(movie: Dict) -> None:
+    """Display favorite and watchlist action buttons.
+    
+    Args:
+        movie: Movie dictionary
+    """
+    movie_id = movie.get('id')
+    is_fav = is_favorited(movie_id)
+    is_watch = is_in_watchlist(movie_id)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("❤️ " + ("Remove from Favorites" if is_fav else "Add to Favorites"), key=f"fav_{movie_id}", use_container_width=True):
+            if is_fav:
+                remove_from_favorites(movie_id)
+                st.success("Removed from favorites!")
+            else:
+                add_to_favorites(movie_id)
+                st.success("Added to favorites!")
+            st.rerun()
+    
+    with col2:
+        if st.button("📋 " + ("Remove from Watchlist" if is_watch else "Add to Watchlist"), key=f"watch_{movie_id}", use_container_width=True):
+            if is_watch:
+                remove_from_watchlist(movie_id)
+                st.success("Removed from watchlist!")
+            else:
+                add_to_watchlist(movie)
+                st.success("Added to watchlist!")
+            st.rerun()
+

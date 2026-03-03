@@ -10,7 +10,8 @@ from api import (
 from utils import (
     build_search_options, display_movie_details, display_cast_and_crew,
     display_trailers, display_reviews, display_recommendations,
-    display_trending_or_top_section
+    display_trending_or_top_section, display_favorites_section,
+    display_watchlist_section, display_movie_action_buttons
 )
 
 
@@ -22,6 +23,8 @@ def initialize_session_state() -> None:
         st.session_state.search_results = {}
     if "show_trending" not in st.session_state:
         st.session_state.show_trending = True
+    if "view_mode" not in st.session_state:
+        st.session_state.view_mode = "search"  # search, favorites, or watchlist
 
 
 def handle_search(query: str) -> None:
@@ -74,6 +77,27 @@ def render_selection_section() -> None:
         st.session_state.selected_movie_id = st.session_state.search_results[choice]
 
 
+def render_sidebar() -> None:
+    """Render sidebar navigation."""
+    st.sidebar.title("🎬 Navigation")
+    
+    view = st.sidebar.radio(
+        "Choose View:",
+        ["🔍 Search", "❤️ Favorites", "📋 Watchlist"],
+        key="nav_radio"
+    )
+    
+    if view == "🔍 Search":
+        st.session_state.view_mode = "search"
+    elif view == "❤️ Favorites":
+        st.session_state.view_mode = "favorites"
+    elif view == "📋 Watchlist":
+        st.session_state.view_mode = "watchlist"
+    
+    st.sidebar.divider()
+    st.sidebar.markdown("**Built with TMDB API**")
+
+
 def render_details_section() -> None:
     """Render the movie details display with all content & discovery features."""
     if not st.session_state.selected_movie_id:
@@ -86,6 +110,11 @@ def render_details_section() -> None:
         
         # Main movie details
         display_movie_details(movie_details)
+        
+        st.divider()
+        
+        # Action buttons (Favorites & Watchlist)
+        display_movie_action_buttons(movie_details)
         
         st.divider()
         
@@ -140,7 +169,7 @@ def main() -> None:
         page_title=APP_TITLE,
         page_icon="🎬",
         layout="wide",
-        initial_sidebar_state="collapsed"
+        initial_sidebar_state="expanded"
     )
     
     # Validate API key
@@ -150,14 +179,26 @@ def main() -> None:
     # Initialize session state
     initialize_session_state()
     
-    # Render app
-    st.title(APP_TITLE)
-    st.markdown("Search for movies and discover detailed information from **The Movie Database (TMDB)**")
+    # Render sidebar navigation
+    render_sidebar()
     
-    render_search_section()
-    render_selection_section()
-    render_details_section()
-    render_discovery_section()
+    # Render app based on view mode
+    if st.session_state.view_mode == "search":
+        st.title(APP_TITLE)
+        st.markdown("Search for movies and discover detailed information from **The Movie Database (TMDB)**")
+        
+        render_search_section()
+        render_selection_section()
+        render_details_section()
+        render_discovery_section()
+    
+    elif st.session_state.view_mode == "favorites":
+        st.title("❤️ My Favorite Movies")
+        display_favorites_section()
+    
+    elif st.session_state.view_mode == "watchlist":
+        st.title("📋 My Watchlist")
+        display_watchlist_section()
 
 
 if __name__ == "__main__":
