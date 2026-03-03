@@ -88,7 +88,7 @@ def render_sidebar() -> None:
     
     view = st.sidebar.radio(
         "Choose View:",
-        ["🔍 Search", "❤️ Favorites", "📋 Watchlist", "👥 Compare Movies", "🌟 Actor", "Settings"],
+        ["🔍 Search", "❤️ Favorites", "📋 Watchlist", "👥 Compare Movies", "🌟 Actor", "📊 Statistics", "Settings"],
         key="nav_radio"
     )
     
@@ -284,6 +284,10 @@ def main() -> None:
                     display_actor_filmography(person_id, actor_name)
             else:
                 st.info(f"No cast information found for '{query}'")
+
+    elif st.session_state.view_mode == "statistics":
+        st.title("📊 Statistics Dashboard")
+        display_statistics()
     
     elif st.session_state.view_mode == "settings":
         st.title("⚙️ Settings")

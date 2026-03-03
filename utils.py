@@ -9,6 +9,7 @@ from storage import (
 )
 from pdfexport import create_movie_pdf
 from api import get_person_filmography
+import pandas as pd
 
 
 def format_search_option(movie: Dict) -> str:
@@ -246,6 +247,50 @@ def display_actor_filmography(person_id: int, actor_name: str) -> None:
             if film.get("poster_path"):
                 st.image(f"{IMAGE_BASE_URL}{film.get('poster_path')}")
             st.caption(f"{film.get('release_date', 'N/A')[:4]}")
+
+
+def display_statistics() -> None:
+    """Display analytics dashboard based on favorites."""
+    st.subheader("📊 Your Movie Statistics")
+    favorites_ids = load_favorites()
+    if not favorites_ids:
+        st.info("Add some favorite movies to see statistics")
+        return
+    
+    # load full movie details for favorites
+    fav_movies = []
+    for movie_id in favorites_ids:
+        movie = get_movie_details(movie_id)
+        if movie:
+            fav_movies.append(movie)
+    
+    if not fav_movies:
+        st.warning("Could not load favorite movie details for statistics")
+        return
+    
+    df = pd.DataFrame(fav_movies)
+    
+    # Genre distribution
+    genres = df['genres'].explode().dropna().apply(lambda x: x.get('name'))
+    genre_counts = genres.value_counts()
+    st.write("**Genre Distribution**")
+    st.bar_chart(genre_counts)
+    
+    # Rating distribution
+    st.write("**Rating Distribution**")
+    st.bar_chart(df['vote_average'])
+    
+    # Budget vs Revenue
+    if 'budget' in df.columns and 'revenue' in df.columns:
+        st.write("**Budget vs Revenue**")
+        budgets = df['budget'].fillna(0)
+        revenues = df['revenue'].fillna(0)
+        budget_rev_df = pd.DataFrame({'Budget': budgets, 'Revenue': revenues})
+        st.bar_chart(budget_rev_df)
+    
+    # Average rating
+    avg_rating = df['vote_average'].mean()
+    st.write(f"**Average Rating:** {avg_rating:.2f} / 10")
 
 
 def display_movie_comparison(movies: List[Dict]) -> None:
