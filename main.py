@@ -10,6 +10,12 @@ if not API_KEY:
 BASE_URL = "https://api.themoviedb.org/3"
 IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
+# Initialize session state
+if "selected_movie_id" not in st.session_state:
+    st.session_state.selected_movie_id = None
+if "search_results" not in st.session_state:
+    st.session_state.search_results = {}
+
 st.title("Movie Detail App - TMDB")
 
 # search section
@@ -20,26 +26,34 @@ if st.button("Search") and query:
     data = res.json()
     results = data.get("results", [])
     if results:
-        # show selection
-        options = {f"{r.get('release_date','')[:4]} | {r.get('title')}": r.get('id') for r in results}
-        choice = st.selectbox("Select a movie", list(options.keys()))
-        if choice:
-            movie_id = options[choice]
-            detail_res = requests.get(f"{BASE_URL}/movie/{movie_id}", params={"api_key": API_KEY})
-            detail = detail_res.json()
-            # display details
-            st.header(detail.get("title"))
-            if detail.get("poster_path"):
-                st.image(f"{IMAGE_BASE}{detail.get('poster_path')}")
-            st.write("**Release Date:**", detail.get("release_date"))
-            st.write("**Overview:**", detail.get("overview"))
-            st.write("**Genres:**", ", ".join([g['name'] for g in detail.get('genres', [])]))
-            st.write("**Runtime:**", detail.get("runtime"), "minutes")
-            st.write("**Rating:**", detail.get("vote_average"), "/ 10")
-            st.write("**Popularity:**", detail.get("popularity"))
-            st.write("**Status:**", detail.get("status"))
-            st.write("**Original Language:**", detail.get("original_language"))
-            st.write("**Budget:**", detail.get("budget"))
-            st.write("**Revenue:**", detail.get("revenue"))
+        # Store results in session state
+        st.session_state.search_results = {f"{r.get('release_date','')[:4]} | {r.get('title')}": r.get('id') for r in results}
+        st.success(f"Found {len(results)} movies")
     else:
         st.warning("No results found")
+        st.session_state.search_results = {}
+
+# Show dropdown if search results exist
+if st.session_state.search_results:
+    choice = st.selectbox("Select a movie", [""] + list(st.session_state.search_results.keys()))
+    if choice and choice != "":
+        st.session_state.selected_movie_id = st.session_state.search_results[choice]
+    
+# Display movie details if a movie is selected
+if st.session_state.selected_movie_id:
+    detail_res = requests.get(f"{BASE_URL}/movie/{st.session_state.selected_movie_id}", params={"api_key": API_KEY})
+    detail = detail_res.json()
+    # display details
+    st.header(detail.get("title"))
+    if detail.get("poster_path"):
+        st.image(f"{IMAGE_BASE}{detail.get('poster_path')}")
+    st.write("**Release Date:**", detail.get("release_date"))
+    st.write("**Overview:**", detail.get("overview"))
+    st.write("**Genres:**", ", ".join([g['name'] for g in detail.get('genres', [])]))
+    st.write("**Runtime:**", detail.get("runtime"), "minutes")
+    st.write("**Rating:**", detail.get("vote_average"), "/ 10")
+    st.write("**Popularity:**", detail.get("popularity"))
+    st.write("**Status:**", detail.get("status"))
+    st.write("**Original Language:**", detail.get("original_language"))
+    st.write("**Budget:**", detail.get("budget"))
+    st.write("**Revenue:**", detail.get("revenue"))
