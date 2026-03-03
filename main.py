@@ -25,11 +25,13 @@ def initialize_session_state() -> None:
     if "show_trending" not in st.session_state:
         st.session_state.show_trending = True
     if "view_mode" not in st.session_state:
-        st.session_state.view_mode = "search"  # search, favorites, watchlist, compare, actor, settings
+        st.session_state.view_mode = "search"  # search, favorites, watchlist, compare, actor, settings, statistics
     if "comparison_movies" not in st.session_state:
         st.session_state.comparison_movies = []
     if "compare_results" not in st.session_state:
         st.session_state.compare_results = {}
+    if "theme" not in st.session_state:
+        st.session_state.theme = "Light"  # Light or Dark
 
 
 def handle_search(query: str) -> None:
@@ -102,9 +104,14 @@ def render_sidebar() -> None:
         st.session_state.view_mode = "compare"
     elif view == "🌟 Actor":
         st.session_state.view_mode = "actor"
+    elif view == "📊 Statistics":
+        st.session_state.view_mode = "statistics"
     elif view == "Settings":
         st.session_state.view_mode = "settings"
     
+    st.sidebar.divider()
+    st.sidebar.markdown("**Theme**")
+    choice = st.sidebar.selectbox("Color Mode", ["Light", "Dark"], key="theme")
     st.sidebar.divider()
     st.sidebar.markdown("**Built with TMDB API**")
 
@@ -173,6 +180,24 @@ def render_discovery_section() -> None:
         display_trending_or_top_section("Top Rated Movies", top_rated)
 
 
+def apply_theme() -> None:
+    """Inject CSS based on selected theme."""
+    theme = st.session_state.get("theme", "Light")
+    if theme == "Dark":
+        st.markdown(
+            """
+            <style>
+            .stApp {background-color: #0E1117; color: #FAFAFA;}
+            .css-1d391kg, .css-1lcbmhc {background-color: #0E1117;}
+            .stButton>button {background-color:#333333;color:#FAFAFA;}
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown("""<style>.stApp {background-color: white; color: black;}</style>""", unsafe_allow_html=True)
+
+
 def main() -> None:
     """Main application entry point."""
     # Page configuration
@@ -192,6 +217,9 @@ def main() -> None:
     
     # Render sidebar navigation
     render_sidebar()
+    
+    # Apply theme CSS after sidebar sets theme
+    apply_theme()
     
     # Render app based on view mode
     if st.session_state.view_mode == "search":
